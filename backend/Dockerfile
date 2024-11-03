@@ -17,7 +17,10 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install
 
 # Copy the rest of the application code
-COPY . .
+COPY backend /app/backend
 
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
 # Set the entry point for the container
-CMD ["poetry", "run", "python", "your_main_script.py"]
+CMD ["poetry", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

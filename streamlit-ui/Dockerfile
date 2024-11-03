@@ -17,7 +17,10 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install
 
 # Copy the rest of the application code
-COPY . .
+COPY streamlit_ui /app/streamlit_ui
 
+ENV PYTHONPATH=/app
+
+EXPOSE 3001
 # Set the entry point for the container
-CMD ["poetry", "run", "python", "your_main_script.py"]
+CMD ["poetry", "run", "streamlit", "run", "streamlit_ui/main.py", "--server.port=3001", "--server.address=0.0.0.0"]

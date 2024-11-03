@@ -100,3 +100,4 @@ dmypy.json
 # IDEs
 .idea/
 *.iml
+.venv/
