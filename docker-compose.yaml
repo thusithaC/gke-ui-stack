@@ -5,6 +5,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
+    image: thusithanc/gke-apptest-backend:latest
     volumes:
       - ./backend/backend:/app/backend
       - ./backend/pyproject.toml:/app/pyproject.toml
@@ -22,6 +23,7 @@ services:
       context: ./streamlit-ui
       dockerfile: Dockerfile
     container_name: streamlit-ui
+    image: thusithanc/gke-apptest-ui:latest
     ports:
       - "3001:3001"
     depends_on:

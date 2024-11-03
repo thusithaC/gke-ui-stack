@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit-ui-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit-ui
+  template:
+    metadata:
+      labels:
+        app: streamlit-ui
+    spec:
+      containers:
+      - name: streamlit-ui
+        image: thusithanc/gke-apptest-ui@sha256:960e6d0696b6f148351d72a44687221b1f8ab259e58b1f9535801de09de4b87f
+        ports:
+        - containerPort: 3001
+        env:
+        - name: BACKEND_URL
+          value: "http://backend-service.default.svc.cluster.local:80"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamlit-ui-service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/app-protocols: '{"http":"HTTP"}'
+    cloud.google.com/neg-status-verbosity: "FULL"
+    cloud.google.com/neg-status-uptime-checks-enable: "true"
+spec:
+  selector:
+    app: streamlit-ui
+  ports:
+    - appProtocol: HTTP
+      port: 80
+      targetPort: 3001
+  type: ClusterIP

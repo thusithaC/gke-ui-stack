@@ -1,0 +1,88 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: backend-gateway
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: All
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPGatewayPolicy
+metadata:
+  name: backend-gateway-policy
+spec:
+  default:
+    allowGlobalAccess: true
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: backend-gateway
+
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: backend-route
+spec:
+  parentRefs:
+  - name: backend-gateway
+  rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /api/
+    backendRefs:
+      - name: backend-service
+        port: 80
+  - matches:
+      - path:
+          value: /
+    backendRefs:
+      - name: streamlit-ui-service
+        port: 80
+---
+
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: backend-health-check
+spec:
+  default:
+    logConfig:
+      enabled: true
+    config:
+      type: TCP
+      httpHealthCheck:
+        requestPath: /health
+        port: 80
+  targetRef:
+    group: ""
+    kind: Service
+    name: backend-service
+
+---
+
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: ui-health-check
+spec:
+  default:
+    logConfig:
+      enabled: true
+    config:
+      type: TCP
+      httpHealthCheck:
+        requestPath: /
+        port: 80
+  targetRef:
+    group: ""
+    kind: Service
+    name: streamlit-ui-service

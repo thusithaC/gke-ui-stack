@@ -12,7 +12,7 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.get("/get-name")
+@app.get("/api/get-name")
 async def get_name():
     name = random.choice(names)
     return {"name": name}

@@ -1,8 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
-  namespace: tnc
+  name: backend-deployment
 spec:
   replicas: 1
   selector:
@@ -15,95 +14,40 @@ spec:
     spec:
       containers:
       - name: backend
-        image: your-backend-image:latest
+        image: thusithanc/gke-apptest-backend@sha256:0234d3d9c9cd4606b3fd75445e6ba92d735247a41594e636a5dccc675d3dc3b5
         ports:
         - containerPort: 8000
+        env:
+        - name: BACKEND_URL
+          value: "http://localhost:8000"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
-  namespace: tnc
+  name: backend-service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/app-protocols: '{"http":"HTTP"}'
+    cloud.google.com/neg-status-verbosity: "FULL"
+    cloud.google.com/neg-status-uptime-checks-enable: "true"
 spec:
   selector:
     app: backend
   ports:
-    - protocol: TCP
-      port: 8000
+    - appProtocol: HTTP
+      port: 80
       targetPort: 8000
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ui
-  namespace: tnc
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ui
-  template:
-    metadata:
-      labels:
-        app: ui
-    spec:
-      containers:
-      - name: ui
-        image: your-ui-image:latest
-        ports:
-        - containerPort: 8501
-        env:
-        - name: BACKEND_URL
-          value: http://backend:8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ui
-  namespace: tnc
-spec:
-  selector:
-    app: ui
-  ports:
-    - protocol: TCP
-      port: 8501
-      targetPort: 8501
----
-apiVersion: networking.x-k8s.io/v1alpha1
-kind: GatewayClass
-metadata:
-  name: gke-l7-gateway
-spec:
-  controllerName: networking.gke.io/gateway
----
-apiVersion: networking.x-k8s.io/v1alpha1
-kind: Gateway
-metadata:
-  name: tnc-gateway
-  namespace: tnc
-spec:
-  gatewayClassName: gke-l7-gateway
-  listeners:
-  - name: http
-    port: 80
-    protocol: HTTP
-    routes:
-      kind: HTTPRoute
-      selector:
-        matchLabels:
-          app: ui
----
-apiVersion: networking.x-k8s.io/v1alpha1
-kind: HTTPRoute
-metadata:
-  name: ui-route
-  namespace: tnc
-spec:
-  rules:
-  - matches:
-    - path:
-        type: Prefix
-        value: /
-    forwardTo:
-    - serviceName: ui
-      port: 8501
+  type: ClusterIP
