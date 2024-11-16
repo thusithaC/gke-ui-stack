@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-cert
+  namespace: tnc
+type: kubernetes.io/tls
+data:
+  tls.crt: $TLS_CERT
+  tls.key: $TLS_KEY
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iap-oauth-secret
+  namespace: tnc
+type: Opaque
+data:
+  key: $IAP_CLIENT_SECRET
+
+
+#--- depricated dont use
+#apiVersion: cloud.google.com/v1
+#kind: BackendConfig
+#metadata:
+#  name: backend-config-default
+#  namespace: tnc
+#spec:
+#  iap:
+#    enabled: true
+#    oauthclientCredentials:
+#      secretName: iap-oauth-secret
+#---
+
+# https://cloud.google.com/kubernetes-engine/docs/how-to/configure-gateway-resources#configure_iap

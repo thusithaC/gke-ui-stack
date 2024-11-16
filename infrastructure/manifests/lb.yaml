@@ -2,12 +2,17 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: backend-gateway
+  namespace: tnc
 spec:
   gatewayClassName: gke-l7-global-external-managed
   listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      certificateRefs:
+        - kind: Secret
+          name: tls-cert
     allowedRoutes:
       namespaces:
         from: All
@@ -17,6 +22,7 @@ apiVersion: networking.gke.io/v1
 kind: GCPGatewayPolicy
 metadata:
   name: backend-gateway-policy
+  namespace: tnc
 spec:
   default:
     allowGlobalAccess: true
@@ -30,6 +36,7 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: backend-route
+  namespace: tnc
 spec:
   parentRefs:
   - name: backend-gateway
@@ -53,6 +60,7 @@ apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
   name: backend-health-check
+  namespace: tnc
 spec:
   default:
     logConfig:
@@ -73,6 +81,7 @@ apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
   name: ui-health-check
+  namespace: tnc
 spec:
   default:
     logConfig:
@@ -86,3 +95,40 @@ spec:
     group: ""
     kind: Service
     name: streamlit-ui-service
+
+# Setting up IAP
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: ui-policy-default
+  namespace: tnc
+spec:
+  default:
+    iap:
+      enabled: true
+      oauth2ClientSecret:
+        name: iap-oauth-secret
+      clientID: $IAP_CLIENT_ID
+  targetRef:
+    group: ""
+    kind: Service
+    name: streamlit-ui-service
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: backend-policy-default
+  namespace: tnc
+spec:
+  default:
+    iap:
+      enabled: true
+      oauth2ClientSecret:
+        name: iap-oauth-secret
+      clientID: $IAP_CLIENT_ID
+  targetRef:
+    group: ""
+    kind: Service
+    name: backend-service
